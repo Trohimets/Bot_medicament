@@ -1,7 +1,7 @@
 import requests
 
 
-search_name = 'Квамател'
+search_name = 'ацц'
 package = 'таблетки, покрытые пленочной оболочкой, 20 мг, 14 шт. - блистер (2)  - пачка картонная'
 
 def get_json(search_name):
