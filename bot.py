@@ -7,9 +7,9 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 from price_parser import get_json
-
+TOKEN='5002789883:AAHyYXw4E7ayfpRYbQhQbs5ZfplmX306o-4'
 storage = MemoryStorage()
-bot = Bot(token=os.getenv('TOKEN'))
+bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
 
