@@ -1,7 +1,7 @@
 import requests
 
 
-search_name = 'ацц'
+search_name = 'Ацетилсалициловая кислота'
 package = 'таблетки, покрытые пленочной оболочкой, 20 мг, 14 шт. - блистер (2)  - пачка картонная'
 
 def get_json(search_name):
@@ -22,7 +22,7 @@ def get_producer(data, package):
     for element in data:
         if element['package'] == package:
             result.append(element['producer'])
-    print(len(result))
+    return result
 
 data = get_json(search_name)
 get_producer(data, package)
