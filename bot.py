@@ -6,7 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-from price_parser import get_json
+from price_parser import get_json, get_package
 
 storage = MemoryStorage()
 bot = Bot(token=os.getenv('TOKEN'))
@@ -20,8 +20,9 @@ custom_keyboard.add(load_button).add(cancel_button)
 
 
 class FSMCheckPrice(StatesGroup):
-    hello = State()
     check_name = State()
+    get_package = State()
+    
 
 
 @dp.message_handler(commands=['start'])
@@ -32,17 +33,33 @@ async def process_start_command(message: types.Message):
 
 @dp.message_handler(commands='Проверить_цену', state=None)
 async def start_dialog(message: types.Message):
-    await FSMCheckPrice.hello.set()
+    await FSMCheckPrice.check_name.set()
     await message.reply('Какое лекарство будем проверять?')
 
 
-@dp.message_handler(state=FSMCheckPrice.hello)
+@dp.message_handler(state=FSMCheckPrice.check_name)
 async def get_price(message: types.Message, state: FSMContext):
     data = get_json(message.text)
-    print(data)
-    await message.reply(data)
+    if len(data) == 0:
+        await message.reply('Вы допустили ошибку в названии препарата, либо он'
+                            'не входит в перечень ЖНВЛП')
+        await state.finish()
+    else:
+        packages = get_package(data)
+        message_string = ''
+        for key_number, package in enumerate(packages):
+            message_string += str(key_number) + '. ' + package + ' \n '
+        print(message_string)
+        await message.reply(message_string)
+        # отправить клавиатуру или инлайн клавиатуру с номерами вариантов
+        # лекарственных форм дозиоровок и упаковок
 
-    await state.finish()
+        await FSMCheckPrice.get_package.set()
+
+
+# @dp.message_handler(state=FSMCheckPrice.get_package)
+# async def get_produser(message: types.Message, state: FSMCheckPrice):
+
 
 
 @dp.message_handler(state="*", commands='Отмена')
@@ -52,6 +69,7 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
         return
     await state.finish()
     await message.reply('Проверка отменена')
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

@@ -1,7 +1,7 @@
 import requests
 
 
-search_name = 'ацц'
+search_name = 'Ацетилсалициловая кислота'
 package = 'таблетки, покрытые пленочной оболочкой, 20 мг, 14 шт. - блистер (2)  - пачка картонная'
 
 def get_json(search_name):
