@@ -22,6 +22,8 @@ custom_keyboard.add(load_button).add(cancel_button)
 class FSMCheckPrice(StatesGroup):
     check_name = State()
     get_package = State()
+    get_produser = State()
+    check_user_price = State()
     
 
 
