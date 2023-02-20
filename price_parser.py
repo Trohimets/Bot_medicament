@@ -21,10 +21,11 @@ def get_package(data, producer):
 def get_producer(data):
     result = []
     for element in data:
-        result.append(element['producer'])
+        if element['producer'] not in result:
+            result.append(element['producer'])
     return result
 
 # print(get_json(search_name))
-data = get_json(search_name)
+# data = get_json(search_name)
 # print(get_producer(data))
-print(get_package(data, producer))
+# print(get_package(data, producer))

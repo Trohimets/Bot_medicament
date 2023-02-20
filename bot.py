@@ -4,9 +4,11 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup)
 
-from price_parser import get_json, get_package
+
+from price_parser import get_json, get_package, get_producer
 
 storage = MemoryStorage()
 bot = Bot(token=os.getenv('TOKEN'))
@@ -24,6 +26,17 @@ class FSMCheckPrice(StatesGroup):
     get_package = State()
     get_produser = State()
     check_user_price = State()
+
+def make_producer_inline_keyboard(producers)-> InlineKeyboardMarkup:
+    producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
+    for number, producer in enumerate(producers):
+        l = 35
+        chunks = [producer[i:i+l] for i in range(0, len(producer), l)]
+        result = '"""' + '\n'.join(chunks) + '"""'
+        print(result)
+        producer_button = InlineKeyboardButton(text=result, callback_data=number)
+        producer_inline_keyboard.add(producer_button)
+    return producer_inline_keyboard
     
 
 
@@ -47,12 +60,12 @@ async def get_price(message: types.Message, state: FSMContext):
                             'не входит в перечень ЖНВЛП')
         await state.finish()
     else:
-        packages = get_package(data)
+        producers = get_producer(data)
         message_string = ''
-        for key_number, package in enumerate(packages):
-            message_string += str(key_number) + '. ' + package + ' \n '
-        print(message_string)
-        await message.reply(message_string)
+        for key_number, producer in enumerate(producers):
+            message_string += str(key_number) + '. ' + producer + ' \n '
+        # print(message_string)
+        await message.reply('выберите производителя', reply_markup = make_producer_inline_keyboard(producers))
         # отправить клавиатуру или инлайн клавиатуру с номерами вариантов
         # лекарственных форм дозиоровок и упаковок
 
