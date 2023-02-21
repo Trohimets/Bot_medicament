@@ -28,14 +28,13 @@ class FSMCheckPrice(StatesGroup):
     check_user_price = State()
 
 def make_producer_inline_keyboard(producers)-> InlineKeyboardMarkup:
-    producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
+    producer_inline_keyboard = InlineKeyboardMarkup(row_width=3)
     for number, producer in enumerate(producers):
-        l = 35
-        chunks = [producer[i:i+l] for i in range(0, len(producer), l)]
-        result = '"""' + '\n'.join(chunks) + '"""'
-        print(result)
-        producer_button = InlineKeyboardButton(text=result, callback_data=number)
-        producer_inline_keyboard.add(producer_button)
+        # l = 35
+        # chunks = [producer[i:i+l] for i in range(0, len(producer), l)]
+        # result = '"""' + '\n'.join(chunks) + '"""'
+        producer_button = InlineKeyboardButton(text=number, callback_data=number)
+        producer_inline_keyboard.insert(producer_button)
     return producer_inline_keyboard
     
 
@@ -63,9 +62,9 @@ async def get_price(message: types.Message, state: FSMContext):
         producers = get_producer(data)
         message_string = ''
         for key_number, producer in enumerate(producers):
-            message_string += str(key_number) + '. ' + producer + ' \n '
+            message_string += str(key_number) + ') ' + producer + ' \n \n'
         # print(message_string)
-        await message.reply('выберите производителя', reply_markup = make_producer_inline_keyboard(producers))
+        await message.reply('выберите производителя \n' + message_string, reply_markup = make_producer_inline_keyboard(producers))
         # отправить клавиатуру или инлайн клавиатуру с номерами вариантов
         # лекарственных форм дозиоровок и упаковок
 
