@@ -28,7 +28,7 @@ collback_data = CallbackData('producer','id')
 
 class FSMCheckPrice(StatesGroup):
     check_name = State()
-    get_produser = State()
+    get_producer = State()
     get_package = State()
     check_current_price = State()
 
@@ -37,7 +37,7 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
     producer_inline_keyboard = InlineKeyboardMarkup(row_width=3)
     for number, producer in enumerate(data_list):
         producer_button = InlineKeyboardButton(
-            text=number,
+            text=number+1,
             callback_data=collback_data.new(id=number)
         )
         producer_inline_keyboard.insert(producer_button)
@@ -61,7 +61,7 @@ async def start_dialog_hendler(message: types.Message):
 async def get_price_handler(message: types.Message, state: FSMContext):
     data = get_json(message.text)
     if len(data) == 0:
-        await message.reply('Вы допустили ошибку в названии препарата, либо он'
+        await message.reply('Название препарата указано неправильно либо он'
                             ' не входит в перечень ЖНВЛП')
         await state.finish()
     elif type(data) is str:
@@ -79,20 +79,20 @@ async def get_price_handler(message: types.Message, state: FSMContext):
         )
         await state.update_data(parsed_data=data)
         await state.update_data(producers=producers)
-        await FSMCheckPrice.get_produser.set()
+        await FSMCheckPrice.get_producer.set()
 
     
 
 
 @dp.callback_query_handler(
     collback_data.filter(),
-    state=FSMCheckPrice.get_produser
+    state=FSMCheckPrice.get_producer
 )
 async def get_package_handler(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     data = await state.get_data()
-    current_produser = data['producers'][int(callback_data['id'])]
-    await state.update_data(current_produser=current_produser)
-    packages = get_package(data['parsed_data'], current_produser)
+    current_produсer = data['producers'][int(callback_data['id'])]
+    await state.update_data(current_produсer=current_produсer)
+    packages = get_package(data['parsed_data'], current_produсer)
     await state.update_data(packeges=packages)
     message_string = ''
     for key_number, package in enumerate(packages):
@@ -111,10 +111,10 @@ async def get_package_handler(callback: types.CallbackQuery, callback_data: dict
 async def check_price_handler(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     data = await state.get_data()
     parsed_data = data['parsed_data']
-    current_produser = data['current_produser']
+    current_produсer = data['current_produсer']
     packages = data['packeges']
     current_packege = packages[int(callback_data['id'])]
-    final_price = get_price(parsed_data, current_produser, current_packege)
+    final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
             f'Максимальная цена для данного преперата {final_price}'
         )
