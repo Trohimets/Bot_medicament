@@ -5,12 +5,22 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text, ContentTypeFilter
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
+
+from aiogram.types import (BotCommand, InlineKeyboardButton, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 from aiogram.utils.callback_data import CallbackData
 
 
 from price_parser import get_json, get_package, get_producer, get_price
+
+
+async def setup_bot_commands(dp):
+    commands = [
+        BotCommand(command='/start', description='Начать работу бота'),
+        BotCommand(command='/cancel', description='Прервать работу бота')
+        ]
+    await dp.bot.set_my_commands(commands)
+
 
 storage = MemoryStorage()
 bot = Bot(token=os.getenv('TOKEN'))
@@ -22,7 +32,7 @@ cancel_button = KeyboardButton('Отмена')
 custom_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 custom_keyboard.add(load_button).add(cancel_button)
 
-collback_data = CallbackData('producer','id')
+collback_data = CallbackData('producer', 'id')
 
 
 
@@ -43,6 +53,7 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
         producer_inline_keyboard.insert(producer_button)
     return producer_inline_keyboard
     
+
 
 
 @dp.message_handler(commands=['start'])
@@ -121,7 +132,7 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     await state.finish()
 
 
-@dp.message_handler(Text(equals='Отмена'), state='*')
+@dp.message_handler(commands=['cancel'], state='*')
 async def cancel_dialog(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
@@ -131,4 +142,4 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, skip_updates=True, on_startup=setup_bot_commands)
