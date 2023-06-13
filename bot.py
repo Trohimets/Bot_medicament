@@ -28,9 +28,8 @@ dp = Dispatcher(bot, storage=storage)
 
 
 load_button = KeyboardButton('Проверить цену')
-cancel_button = KeyboardButton('Отмена')
 custom_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-custom_keyboard.add(load_button).add(cancel_button)
+custom_keyboard.add(load_button)
 
 collback_data = CallbackData('producer', 'id')
 
