@@ -72,7 +72,7 @@ async def get_price_handler(message: types.Message, state: FSMContext):
         
         message_string = ''
         for key_number, producer in enumerate(producers):
-            message_string += str(key_number) + ')\n' + producer + ' \n \n'
+            message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
         await message.reply(
             'выберите производителя \n\n' + message_string,
             reply_markup = make_inline_keyboard(producers)
@@ -96,7 +96,7 @@ async def get_package_handler(callback: types.CallbackQuery, callback_data: dict
     await state.update_data(packeges=packages)
     message_string = ''
     for key_number, package in enumerate(packages):
-        message_string += str(key_number) + ')\n' + package + ' \n \n'
+        message_string += str(key_number+1) + ')\n' + package + ' \n \n'
     await callback.message.answer(
             'выберите упаковку \n\n' + message_string,
             reply_markup = make_inline_keyboard(packages)
