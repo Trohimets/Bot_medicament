@@ -12,6 +12,7 @@ from aiogram.utils.callback_data import CallbackData
 
 
 from price_parser import get_json, get_package, get_producer, get_price
+import tg_analytic
 
 
 async def setup_bot_commands(dp):
@@ -53,22 +54,23 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
     return producer_inline_keyboard
     
 
-
-
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
+    tg_analytic.statistics(message.chat.id, message.text)
     await message.reply('Начинаем работу', reply_markup=custom_keyboard)
 
 
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
 async def start_dialog_hendler(message: types.Message):
+    tg_analytic.statistics(message.chat.id, message.text)
     await FSMCheckPrice.check_name.set()
     await message.reply('Какое лекарство будем проверять?')
 
 
 @dp.message_handler(state=FSMCheckPrice.check_name)
 async def get_price_handler(message: types.Message, state: FSMContext):
+    tg_analytic.statistics(message.chat.id, message.text)
     data = get_json(message.text)
     if len(data) == 0:
         await message.reply('Название препарата указано неправильно либо он'
@@ -133,11 +135,30 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
 
 @dp.message_handler(commands=['cancel'], state='*')
 async def cancel_dialog(message: types.Message, state: FSMContext):
+    tg_analytic.statistics(message.chat.id, message.text)
     current_state = await state.get_state()
     if current_state is None:
         return
     await state.finish()
     await message.reply('Проверка отменена')
+
+
+
+@dp.message_handler(commands=['статистика'], state='*')
+async def analitics_command(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    print(message.text)
+    if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
+        st = message.text.split(' ')
+        if 'txt' in st or 'тхт' in st:
+            tg_analytic.analysis(st,message.chat.id)
+            with open('%s.txt' %message.chat.id ,'r',encoding='UTF-8') as file:
+                bot.send_document(message.chat.id,file)
+                tg_analytic.remove(message.chat.id)
+        else:
+            messages = tg_analytic.analysis(st,message.chat.id)
+            await bot.send_message(message.chat.id, messages)
+    await message.reply('статистика', reply_markup=custom_keyboard)
 
 
 if __name__ == '__main__':
