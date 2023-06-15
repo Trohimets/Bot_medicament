@@ -15,6 +15,9 @@ from price_parser import get_json, get_package, get_producer, get_price
 import tg_analytic
 
 
+ID = None
+
+
 async def setup_bot_commands(dp):
     commands = [
         BotCommand(command='/start', description='Начать работу бота'),
@@ -34,6 +37,13 @@ custom_keyboard.add(load_button)
 
 collback_data = CallbackData('producer', 'id')
 
+
+@dp.message_handler(commands=['moderator'], is_chat_admin=True)
+async def take_statistics_command(message: types.Message):
+    global ID
+    ID =message.from_user.id
+    await bot.send_message(message.from_user.id, 'Вы вошли в режим, который дает возможность ознакомиться со статистикой')
+    await message.delete()
 
 
 class FSMCheckPrice(StatesGroup):
@@ -57,7 +67,7 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     tg_analytic.statistics(message.chat.id, message.text)
-    await message.reply('Начинаем работу', reply_markup=custom_keyboard)
+    await message.reply('Приступим. Для проверки цены нажмите кнопку "Проверить цену" ', reply_markup=custom_keyboard)
 
 
 
@@ -159,6 +169,8 @@ async def analitics_command(message: types.Message, state: FSMContext):
             messages = tg_analytic.analysis(st,message.chat.id)
             await bot.send_message(message.chat.id, messages)
     await message.reply('статистика', reply_markup=custom_keyboard)
+
+
 
 
 if __name__ == '__main__':
