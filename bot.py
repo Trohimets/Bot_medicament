@@ -16,6 +16,7 @@ import tg_analytic
 
 
 ID = None
+chat_id = os.getenv('CHAT_ID')
 
 
 async def setup_bot_commands(dp):
@@ -32,8 +33,12 @@ dp = Dispatcher(bot, storage=storage)
 
 
 load_button = KeyboardButton('Проверить цену')
-custom_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+custom_keyboard = ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
 custom_keyboard.add(load_button)
+
 
 collback_data = CallbackData('producer', 'id')
 
@@ -51,9 +56,10 @@ class FSMCheckPrice(StatesGroup):
     get_producer = State()
     get_package = State()
     check_current_price = State()
+    get_appeal = State()
+
 
 def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
-
     producer_inline_keyboard = InlineKeyboardMarkup(row_width=3)
     for number, producer in enumerate(data_list):
         producer_button = InlineKeyboardButton(
@@ -64,11 +70,24 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
     return producer_inline_keyboard
     
 
+# @dp.message_handler()
+# async def get_chat_id(message):
+#     print(message)
+
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     tg_analytic.statistics(message.chat.id, message.text)
     await message.reply('Приступим. Для проверки цены нажмите кнопку "Проверить цену" ', reply_markup=custom_keyboard)
 
+
+@dp.message_handler(commands=['cancel'], state='*')
+async def cancel_dialog(message: types.Message, state: FSMContext):
+    tg_analytic.statistics(message.chat.id, message.text)
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.finish()
+    await message.reply('Проверка отменена')
 
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
@@ -138,19 +157,25 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     current_packege = packages[int(callback_data['id'])]
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
-            f'Максимальная цена для данного преперата {final_price}'
+            f'Максимальная цена для данного преперата {final_price} \n' +
+            f'Если вы купили препарат дороже - отправьте фото чека' +
+            f' в этот чат. Или воспользуйтесь меню, для проверки следующего' +
+            f' препарата.'
         )
-    await state.finish()
+    
+    await FSMCheckPrice.get_appeal.set()
 
 
-@dp.message_handler(commands=['cancel'], state='*')
-async def cancel_dialog(message: types.Message, state: FSMContext):
-    tg_analytic.statistics(message.chat.id, message.text)
-    current_state = await state.get_state()
-    if current_state is None:
-        return
+@dp.message_handler(
+    content_types=types.ContentType.PHOTO,
+    state=FSMCheckPrice.get_appeal
+)
+async def get_appeal(message: types.Message, state: FSMContext):
+    await bot.send_photo(chat_id, message.photo[-1].file_id)
     await state.finish()
-    await message.reply('Проверка отменена')
+    await message.reply('Ваша жалоба отправлена на рассмотрение')
+
+
 
 
 
