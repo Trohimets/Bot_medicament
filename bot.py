@@ -12,6 +12,11 @@ from aiogram.utils.callback_data import CallbackData
 
 
 from price_parser import get_json, get_package, get_producer, get_price
+import tg_analytic
+
+
+ID = None
+chat_id = os.getenv('CHAT_ID')
 
 
 async def setup_bot_commands(dp):
@@ -37,6 +42,13 @@ custom_keyboard.add(load_button)
 
 collback_data = CallbackData('producer', 'id')
 
+
+@dp.message_handler(commands=['moderator'], is_chat_admin=True)
+async def take_statistics_command(message: types.Message):
+    global ID
+    ID =message.from_user.id
+    await bot.send_message(message.from_user.id, 'Вы вошли в режим, который дает возможность ознакомиться со статистикой')
+    await message.delete()
 
 
 class FSMCheckPrice(StatesGroup):
@@ -64,11 +76,13 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
-    await message.reply('Начинаем работу', reply_markup=custom_keyboard)
+    tg_analytic.statistics(message.chat.id, message.text)
+    await message.reply('Приступим. Для проверки цены нажмите кнопку "Проверить цену" ', reply_markup=custom_keyboard)
 
 
 @dp.message_handler(commands=['cancel'], state='*')
 async def cancel_dialog(message: types.Message, state: FSMContext):
+    tg_analytic.statistics(message.chat.id, message.text)
     current_state = await state.get_state()
     if current_state is None:
         return
@@ -78,12 +92,14 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
 async def start_dialog_hendler(message: types.Message):
+    tg_analytic.statistics(message.chat.id, message.text)
     await FSMCheckPrice.check_name.set()
     await message.reply('Какое лекарство будем проверять?')
 
 
 @dp.message_handler(state=FSMCheckPrice.check_name)
 async def get_price_handler(message: types.Message, state: FSMContext):
+    tg_analytic.statistics(message.chat.id, message.text)
     data = get_json(message.text)
     if len(data) == 0:
         await message.reply('Название препарата указано неправильно либо он'
@@ -155,9 +171,23 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     state=FSMCheckPrice.get_appeal
 )
 async def get_appeal(message: types.Message, state: FSMContext):
-    await bot.send_photo('-1001925158091', message.photo[-1].file_id)
+    await bot.send_photo(chat_id, message.photo[-1].file_id)
     await state.finish()
     await message.reply('Ваша жалоба отправлена на рассмотрение')
+
+
+
+
+
+@dp.message_handler(commands=['статистика'], state='*')
+async def analitics_command(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    # if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
+    #     print(message.text)
+    st = message.text.split(' ')
+    messages = tg_analytic.analysis(st,message.chat.id)
+    await bot.send_message(message.chat.id, messages)
+    await message.reply('статистика', reply_markup=custom_keyboard)
 
 
 
