@@ -157,17 +157,11 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['статистика'], state='*')
 async def analitics_command(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
-    print(message.text)
-    if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
-        st = message.text.split(' ')
-        if 'txt' in st or 'тхт' in st:
-            tg_analytic.analysis(st,message.chat.id)
-            with open('%s.txt' %message.chat.id ,'r',encoding='UTF-8') as file:
-                bot.send_document(message.chat.id,file)
-                tg_analytic.remove(message.chat.id)
-        else:
-            messages = tg_analytic.analysis(st,message.chat.id)
-            await bot.send_message(message.chat.id, messages)
+    # if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
+    #     print(message.text)
+    st = message.text.split(' ')
+    messages = tg_analytic.analysis(st,message.chat.id)
+    await bot.send_message(message.chat.id, messages)
     await message.reply('статистика', reply_markup=custom_keyboard)
 
 
