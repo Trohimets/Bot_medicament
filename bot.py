@@ -56,7 +56,8 @@ class FSMCheckPrice(StatesGroup):
     get_producer = State()
     get_package = State()
     check_current_price = State()
-    get_appeal = State()
+    get_appeal_text = State()
+    get_appeal_photo = State()
 
 
 def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
@@ -116,7 +117,7 @@ async def get_price_handler(message: types.Message, state: FSMContext):
             message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
         await message.reply(
             'выберите производителя \n\n' + message_string,
-            reply_markup = make_inline_keyboard(producers)
+            reply_markup=make_inline_keyboard(producers)
         )
         await state.update_data(parsed_data=data)
         await state.update_data(producers=producers)
@@ -158,25 +159,39 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
             f'Максимальная цена для данного преперата {final_price} \n' +
-            f'Если вы купили препарат дороже - отправьте фото чека' +
-            f' в этот чат. Или воспользуйтесь меню, для проверки следующего' +
-            f' препарата.'
+            f'Если вы купили препарат дороже, то в следующем сообщении ' +
+            f'отправьте следующие данные: 1)Адрес аптеки в которой вы ' +
+            f'приобрели препарат, 2)Ваши Фамилию, Имя и Отчество, 3)Ваш ' +
+            f'контактный телефон. \nИли воспользуйтесь меню, для проверки' +
+            f' следующего препарата.'
         )
     
-    await FSMCheckPrice.get_appeal.set()
+    await FSMCheckPrice.get_appeal_text.set()
+
+@dp.message_handler(
+        state=FSMCheckPrice.get_appeal_text
+)
+async def get_appeal_text(message: types.Message, state: FSMContext):
+    # appeal_text = message.text
+    await state.update_data(appeal_text = message.text)
+    await message.reply(
+        'В следующем сообщении отправьте фото на котором разборчиво видны:' +
+        ' чек, наименование производителя и дозировка препарата.'
+    )
+    await FSMCheckPrice.get_appeal_photo.set()
 
 
 @dp.message_handler(
     content_types=types.ContentType.PHOTO,
-    state=FSMCheckPrice.get_appeal
+    state=FSMCheckPrice.get_appeal_photo
 )
 async def get_appeal(message: types.Message, state: FSMContext):
     await bot.send_photo(chat_id, message.photo[-1].file_id)
+    data = await state.get_data()
+    await bot.send_message(chat_id, data['appeal_text'])
     await state.finish()
-    await message.reply('Ваша жалоба отправлена на рассмотрение')
-
-
-
+    await message.reply('Спасибо за обращение. '
+                        'Ваша жалоба отправлена на рассмотрение')
 
 
 @dp.message_handler(commands=['статистика'], state='*')
