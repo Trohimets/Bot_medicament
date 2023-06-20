@@ -102,9 +102,12 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
 async def start_dialog_hendler(message: types.Message):
-    tg_analytic.statistics(message.chat.id, message.text)
-    await FSMCheckPrice.check_name.set()
-    await message.reply('Какое лекарство будем проверять?')
+    if message.chat.id > 0:
+        tg_analytic.statistics(message.chat.id, message.text)
+        await FSMCheckPrice.check_name.set()
+        await message.reply('Какое лекарство будем проверять?')
+    else:
+        pass
 
 
 @dp.message_handler(state=FSMCheckPrice.check_name)
@@ -113,11 +116,13 @@ async def get_price_handler(message: types.Message, state: FSMContext):
     data = get_json(message.text)
     if len(data) == 0:
         await message.reply('Название препарата указано неправильно либо он'
-                            ' не входит в перечень ЖНВЛП')
-        await state.finish()
+                            ' не входит в перечень ЖНВЛП. Проверьте правильность написания, включая наличие заглавных букв')
+        await FSMCheckPrice.check_name.set()
+        await message.answer('Какое лекарство будем проверять?')
     elif type(data) is str:
         await message.reply(data)
-        await state.finish()
+        await FSMCheckPrice.check_name.set()
+        await message.answer('Какое лекарство будем проверять?')
     else:
         producers = get_producer(data)
         
@@ -211,7 +216,6 @@ async def analitics_command(message: types.Message, state: FSMContext):
     st = message.text.split(' ')
     messages = tg_analytic.analysis(st,message.chat.id)
     await bot.send_message(message.chat.id, messages)
-    await message.reply('статистика', reply_markup=custom_keyboard)
 
 
 
