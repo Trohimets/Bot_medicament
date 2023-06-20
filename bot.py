@@ -93,10 +93,12 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
 async def start_dialog_hendler(message: types.Message):
-    tg_analytic.statistics(message.chat.id, message.text)
-    await FSMCheckPrice.check_name.set()
-    await message.reply('Какое лекарство будем проверять?')
-
+    if message.chat.id > 0:
+        tg_analytic.statistics(message.chat.id, message.text)
+        await FSMCheckPrice.check_name.set()
+        await message.reply('Какое лекарство будем проверять?')
+    else:
+        pass
 
 @dp.message_handler(state=FSMCheckPrice.check_name)
 async def get_price_handler(message: types.Message, state: FSMContext):
@@ -104,11 +106,13 @@ async def get_price_handler(message: types.Message, state: FSMContext):
     data = get_json(message.text)
     if len(data) == 0:
         await message.reply('Название препарата указано неправильно либо он'
-                            ' не входит в перечень ЖНВЛП')
-        await state.finish()
+                            ' не входит в перечень ЖНВЛП. Проверьте правильность написания, включая наличие заглавных букв')
+        await FSMCheckPrice.check_name.set()
+        await message.answer('Какое лекарство будем проверять?')
     elif type(data) is str:
         await message.reply(data)
-        await state.finish()
+        await FSMCheckPrice.check_name.set()
+        await message.answer('Какое лекарство будем проверять?')
     else:
         producers = get_producer(data)
         
@@ -158,12 +162,12 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     current_packege = packages[int(callback_data['id'])]
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
-            f'Максимальная цена для данного преперата {final_price} руб. \n' +
+            f'Максимальная цена для данного преперата {final_price} руб. \n\n' +
             f'Если вы купили препарат дороже, то в ответном сообщении ' +
             f'отправьте следующие данные:\n1) Адрес аптеки, в которой вы ' +
             f'приобрели препарат\n2) Ваши фамилию, имя и отчество \n3) Ваш ' +
-            f'контактный телефон. \nИли воспользуйтесь меню, для проверки' +
-            f' следующего препарата.'
+            f'контактный телефон. \n\nИли нажмите синюю кнопку "Menu" и прервите работу бота, ' +
+            f'если хотите начать проверку другого препарата.'
         )
     
     await FSMCheckPrice.get_appeal_text.set()
@@ -202,7 +206,6 @@ async def analitics_command(message: types.Message, state: FSMContext):
     st = message.text.split(' ')
     messages = tg_analytic.analysis(st,message.chat.id)
     await bot.send_message(message.chat.id, messages)
-    await message.reply('статистика', reply_markup=custom_keyboard)
 
 
 
