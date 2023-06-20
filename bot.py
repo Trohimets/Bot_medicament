@@ -1,5 +1,6 @@
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -20,7 +21,7 @@ chat_id = os.getenv('CHAT_ID')
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     filename='main.log',
     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
     filemode='a'
@@ -166,12 +167,12 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     current_packege = packages[int(callback_data['id'])]
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
-            f'Максимальная цена для данного преперата {final_price} руб. \n' +
+            f'Максимальная цена для данного преперата {final_price} руб. \n\n' +
             f'Если вы купили препарат дороже, то в ответном сообщении ' +
             f'отправьте следующие данные:\n1) Адрес аптеки, в которой вы ' +
             f'приобрели препарат.\n2) Ваши фамилию, имя и отчество. \n3) Ваш ' +
-            f'контактный телефон. \nИли воспользуйтесь меню, для проверки' +
-            f' следующего препарата.'
+            f'контактный телефон. \n\nИли нажмите синюю кнопку "Menu" и прервите работу бота,' +
+            f' если хотите начать проверку другого препарата.'
         )
     
     await FSMCheckPrice.get_appeal_text.set()
