@@ -93,12 +93,15 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=['статистика'], state='*')
 async def analitics_command(message: types.Message, state: FSMContext):
-    current_state = await state.get_state()
+    if message.chat.id > 0:
+        pass
+    else:
+        current_state = await state.get_state()
     # if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
     #     print(message.text)
-    st = message.text.split(' ')
-    messages = tg_analytic.analysis(st,message.chat.id)
-    await bot.send_message(message.chat.id, messages)
+        st = message.text.split(' ')
+        messages = tg_analytic.analysis(st,message.chat.id)
+        await bot.send_message(message.chat.id, messages)
 
 
 @dp.message_handler(state=None)
