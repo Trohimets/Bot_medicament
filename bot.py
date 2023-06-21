@@ -19,7 +19,6 @@ import tg_analytic
 ID = None
 chat_id = os.getenv('CHAT_ID')
 
-
 # logging.basicConfig(
 #     level=logging.DEBUG,
 #     filename='main.log',
@@ -39,15 +38,6 @@ async def setup_bot_commands(dp):
 storage = MemoryStorage()
 bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=storage)
-
-
-# load_button = KeyboardButton('Проверить цену')
-# custom_keyboard = ReplyKeyboardMarkup(
-#     resize_keyboard=True,
-#     one_time_keyboard=True
-# )
-# custom_keyboard.add(load_button)
-
 
 collback_data = CallbackData('producer', 'id')
 
@@ -111,16 +101,6 @@ async def analitics_command(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, messages)
 
 
-# @dp.message_handler(Text(equals='Проверить цену'), state=None)
-# async def start_dialog_hendler(message: types.Message):
-#     if message.chat.id > 0:
-#         tg_analytic.statistics(message.chat.id, message.text)
-#         await FSMCheckPrice.check_name.set()
-#         await message.reply('Какое лекарство будем проверять?')
-#     else:
-#         pass
-
-
 @dp.message_handler(state=None)
 async def get_price_handler(message: types.Message, state: FSMContext):
     tg_analytic.statistics(message.chat.id, message.text)
@@ -128,11 +108,11 @@ async def get_price_handler(message: types.Message, state: FSMContext):
     if len(data) == 0:
         await message.reply('Название препарата указано неправильно либо он'
                             ' не входит в перечень ЖНВЛП. Проверьте правильность написания, включая наличие заглавных букв')
-        await FSMCheckPrice.check_name.set()
+        await state.finish()
         await message.answer('Какое лекарство будем проверять?')
     elif type(data) is str:
         await message.reply(data)
-        await FSMCheckPrice.check_name.set()
+        state.finish()
         await message.answer('Какое лекарство будем проверять?')
     else:
         producers = get_producer(data)
@@ -149,8 +129,6 @@ async def get_price_handler(message: types.Message, state: FSMContext):
         await FSMCheckPrice.get_producer.set()
 
     
-
-
 @dp.callback_query_handler(
     collback_data.filter(),
     state=FSMCheckPrice.get_producer
