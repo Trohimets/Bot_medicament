@@ -69,7 +69,7 @@ def analysis(bid, user_id):
                                                                                  'Пользователей за последние %s %s: \n' % (
                        season, day_type.get(season, 'дней'))
         for days, number, comm_day in zip(list_of_dates_in_df_user, list_of_number_of_user_in_df_user, commands_in_each_day):
-            message_to_user += '%s Количество: %d Из них новых (которые ввели команду /start): %s\n' % (days, number, comm_day.get('/start', 0))
+            message_to_user += '%s Количество: %d \nИз них новых (которые ввели команду /start): %s\n' % (days, number, comm_day.get('/start', 0))
     if 'команды' in bid:
         message_to_user += 'Статистика команд за последние %s %s: \n' % (season, day_type.get(season, 'дней'))
         for days, commands in zip(list_of_dates_in_df_user, commands_in_each_day):

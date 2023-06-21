@@ -20,12 +20,12 @@ ID = None
 chat_id = os.getenv('CHAT_ID')
 
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename='main.log',
-    format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
-    filemode='w'
-)
+# logging.basicConfig(
+#     level=logging.DEBUG,
+#     filename='main.log',
+#     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
+#     filemode='w'
+# )
 
 
 async def setup_bot_commands(dp):
@@ -111,14 +111,14 @@ async def analitics_command(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, messages)
 
 
-@dp.message_handler(Text(equals='Проверить цену'), state=None)
-async def start_dialog_hendler(message: types.Message):
-    if message.chat.id > 0:
-        tg_analytic.statistics(message.chat.id, message.text)
-        await FSMCheckPrice.check_name.set()
-        await message.reply('Какое лекарство будем проверять?')
-    else:
-        pass
+# @dp.message_handler(Text(equals='Проверить цену'), state=None)
+# async def start_dialog_hendler(message: types.Message):
+#     if message.chat.id > 0:
+#         tg_analytic.statistics(message.chat.id, message.text)
+#         await FSMCheckPrice.check_name.set()
+#         await message.reply('Какое лекарство будем проверять?')
+#     else:
+#         pass
 
 
 @dp.message_handler(state=None)
