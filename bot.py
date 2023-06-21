@@ -24,7 +24,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     filename='main.log',
     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
-    filemode='a'
+    filemode='w'
 )
 
 
@@ -41,12 +41,12 @@ bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=storage)
 
 
-load_button = KeyboardButton('Проверить цену')
-custom_keyboard = ReplyKeyboardMarkup(
-    resize_keyboard=True,
-    one_time_keyboard=True
-)
-custom_keyboard.add(load_button)
+# load_button = KeyboardButton('Проверить цену')
+# custom_keyboard = ReplyKeyboardMarkup(
+#     resize_keyboard=True,
+#     one_time_keyboard=True
+# )
+# custom_keyboard.add(load_button)
 
 
 collback_data = CallbackData('producer', 'id')
@@ -87,7 +87,7 @@ def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     tg_analytic.statistics(message.chat.id, message.text)
-    await message.reply('Приступим. Для проверки цены нажмите кнопку "Проверить цену" ', reply_markup=custom_keyboard)
+    await message.reply('Приступим. Введите название лекарства с учетом регистра')
 
 
 @dp.message_handler(commands=['cancel'], state='*')
@@ -97,7 +97,18 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
     if current_state is None:
         return
     await state.finish()
-    await message.reply('Проверка отменена')
+    await message.reply('Текущая проверка отменена. Вы можете ввести новое название для поиска')
+
+
+
+@dp.message_handler(commands=['статистика'], state='*')
+async def analitics_command(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    # if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
+    #     print(message.text)
+    st = message.text.split(' ')
+    messages = tg_analytic.analysis(st,message.chat.id)
+    await bot.send_message(message.chat.id, messages)
 
 
 @dp.message_handler(Text(equals='Проверить цену'), state=None)
@@ -110,7 +121,7 @@ async def start_dialog_hendler(message: types.Message):
         pass
 
 
-@dp.message_handler(state=FSMCheckPrice.check_name)
+@dp.message_handler(state=None)
 async def get_price_handler(message: types.Message, state: FSMContext):
     tg_analytic.statistics(message.chat.id, message.text)
     data = get_json(message.text)
@@ -206,18 +217,6 @@ async def get_appeal(message: types.Message, state: FSMContext):
     await state.finish()
     await message.reply('Спасибо за обращение. '
                         'Ваша жалоба отправлена на рассмотрение')
-
-
-@dp.message_handler(commands=['статистика'], state='*')
-async def analitics_command(message: types.Message, state: FSMContext):
-    current_state = await state.get_state()
-    # if message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
-    #     print(message.text)
-    st = message.text.split(' ')
-    messages = tg_analytic.analysis(st,message.chat.id)
-    await bot.send_message(message.chat.id, messages)
-
-
 
 
 if __name__ == '__main__':
