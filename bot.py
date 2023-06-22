@@ -86,7 +86,7 @@ def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
 async def update_producer_keyboard(message: types.Message, start: int, producers: list):
     with suppress(MessageNotModified):
         await message.edit_text(
-            f'Выберите производителя\n\n{producers[start]}',
+            f'Выберите производителя:\n\n{producers[start]}',
             reply_markup=make_inline_keyboard(producers, start)
             )
 
@@ -118,7 +118,7 @@ async def update_producer_keyboard(message: types.Message, start: int, producers
 async def update_package_keyboard(message: types.Message, start: int, packages: list):
     with suppress(MessageNotModified):
         await message.edit_text(
-            f'Выберите упаковку\n\n{packages[start]}',
+            f'Выберите упаковку:\n\n{packages[start]}',
             reply_markup=make_inline_keyboard(packages, start)
         )
 
@@ -159,7 +159,7 @@ async def callbacks_price_paginated_handler(call: types.CallbackQuery, callback_
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     tg_analytic.statistics(message.chat.id, message.text)
-    await message.reply('Приступим. Введите название лекарства с учетом регистра')
+    await message.reply('Приступим. Введите название препарата с учетом регистра.')
 
 
 @dp.message_handler(commands=['cancel'], state='*')
@@ -169,7 +169,7 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
     if current_state is None:
         return
     await state.finish()
-    await message.reply('Текущая проверка отменена. Вы можете ввести новое название для поиска')
+    await message.reply('Текущая проверка отменена. Вы можете ввести новое название для поиска.')
 
 
 
@@ -205,7 +205,7 @@ async def get_price_handler(message: types.Message, state: FSMContext):
         for key_number, producer in enumerate(producers):
             message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
         await message.reply(
-            f'Выберите производителя\n\n{producers[0]}',
+            f'Выберите производителя:\n\n{producers[0]}',
             reply_markup=make_inline_keyboard(producers, 0) # 0 - начало списка
         )
         await state.update_data(current_item=0)
@@ -248,12 +248,12 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     current_packege = packages[int(callback_data['action'])]
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
-            f'Максимальная цена для данного преперата {final_price} руб. \n\n' +
+            f'Максимальная цена преперата {final_price} руб.\n\n' +
             f'Если вы купили препарат дороже, то в ответном сообщении ' +
-            f'отправьте следующие данные:\n1) Адрес аптеки, в которой вы ' +
-            f'приобрели препарат.\n2) Ваши фамилию, имя и отчество. \n3) Ваш ' +
-            f'контактный телефон. \n\nИли нажмите синюю кнопку "Menu" и прервите работу бота,' +
-            f' если хотите начать проверку другого препарата.'
+            f'отправьте следующие данные:\n1) адрес аптеки, в которой вы ' +
+            f'приобрели препарат;\n2) ваши фамилию, имя и отчество; \n3) ваш ' +
+            f'контактный телефон. \n\nИли нажмите синюю кнопку "Меню" и прервите работу бота,' +
+            f' чтобы проверить другой препарат.'
         )
     
     await FSMCheckPrice.get_appeal_text.set()
