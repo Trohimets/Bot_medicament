@@ -60,32 +60,67 @@ class FSMCheckPrice(StatesGroup):
 
 
 def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
-    producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
+    inline_keyboard = InlineKeyboardMarkup(row_width=3)
     if start != 0:
-        producer_inline_keyboard.add(
+        inline_keyboard.insert(
             InlineKeyboardButton(
-                text="⬅️ вернуться к прошлому",
+                text='⬅️ Вернуться',
                 callback_data=callback_produser_data.new(action='decr')
             )
         )
-    producer_inline_keyboard.add(
+    inline_keyboard.insert(
         InlineKeyboardButton(
-            text='Выбрать текущего',
+            text='Выбрать',
             callback_data=callback_produser_data.new(action=start)
         )
     )
     if start < len(data_list)-1:
-        producer_inline_keyboard.add(
+        inline_keyboard.insert(
             InlineKeyboardButton(
-                text="➡️ перейти следующему",
+                text='Далее ➡️',
                 callback_data=callback_produser_data.new(action='incr')
             )
         )
-    return producer_inline_keyboard
+    return inline_keyboard
 
-async def update_keyboard(message: types.Message, start: int, produsers: list):
+async def update_producer_keyboard(message: types.Message, start: int, producers: list):
     with suppress(MessageNotModified):
-        await message.edit_text(produsers[start], reply_markup=make_inline_keyboard(produsers, start))
+        await message.edit_text(
+            f'Выберите производителя\n\n{producers[start]}',
+            reply_markup=make_inline_keyboard(producers, start)
+            )
+
+# def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
+#     producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
+#     if start != 0:
+#         producer_inline_keyboard.add(
+#             InlineKeyboardButton(
+#                 text="⬅️ вернуться к прошлому",
+#                 callback_data=callback_produser_data.new(action='decr')
+#             )
+#         )
+#     producer_inline_keyboard.add(
+#         InlineKeyboardButton(
+#             text='Выбрать текущего',
+#             callback_data=callback_produser_data.new(action=start)
+#         )
+#     )
+#     if start < len(data_list)-1:
+#         producer_inline_keyboard.add(
+#             InlineKeyboardButton(
+#                 text="➡️ перейти следующему",
+#                 callback_data=callback_produser_data.new(action='incr')
+#             )
+#         )
+#     return producer_inline_keyboard
+
+
+async def update_package_keyboard(message: types.Message, start: int, packages: list):
+    with suppress(MessageNotModified):
+        await message.edit_text(
+            f'Выберите упаковку\n\n{packages[start]}',
+            reply_markup=make_inline_keyboard(packages, start)
+        )
 
 
 @dp.callback_query_handler(callback_produser_data.filter(action=['incr', 'decr']), state=FSMCheckPrice.get_producer)
@@ -95,11 +130,11 @@ async def callbacks_produser_paginated_handler(call: types.CallbackQuery, callba
     if action == "incr":
         start = data['current_item'] + 1
         await state.update_data(current_item=start)
-        await update_keyboard(call.message, start, data['producers'])
+        await update_producer_keyboard(call.message, start, data['producers'])
     elif action == "decr":
         start = data['current_item'] - 1
         await state.update_data(current_item=0)
-        await update_keyboard(call.message, start, data['producers'])
+        await update_producer_keyboard(call.message, start, data['producers'])
     await call.answer()
 
 
@@ -110,11 +145,11 @@ async def callbacks_price_paginated_handler(call: types.CallbackQuery, callback_
     if action == "incr":
         start = data['current_item'] + 1
         await state.update_data(current_item=start)
-        await update_keyboard(call.message, start, data['packages'])
+        await update_package_keyboard(call.message, start, data['packages'])
     elif action == "decr":
         start = data['current_item'] - 1
         await state.update_data(current_item=0)
-        await update_keyboard(call.message, start, data['packages'])
+        await update_package_keyboard(call.message, start, data['packages'])
     await call.answer()
 
 # @dp.message_handler()
@@ -170,7 +205,7 @@ async def get_price_handler(message: types.Message, state: FSMContext):
         for key_number, producer in enumerate(producers):
             message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
         await message.reply(
-            producers[0],
+            f'Выберите производителя\n\n{producers[0]}',
             reply_markup=make_inline_keyboard(producers, 0) # 0 - начало списка
         )
         await state.update_data(current_item=0)
@@ -193,7 +228,7 @@ async def get_package_handler(call: types.CallbackQuery, callback_data: dict, st
     # for key_number, package in enumerate(packages):
     #     message_string += str(key_number+1) + ')\n' + package + ' \n \n'
     await state.update_data(current_item=0)
-    await update_keyboard(call.message, 0, packages)
+    await update_package_keyboard(call.message, 0, packages)
     # await callback.message.answer(
     #         packages[0],
     #         reply_markup = make_inline_keyboard(packages, 0) # 0 - начало списка
