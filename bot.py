@@ -59,7 +59,7 @@ class FSMCheckPrice(StatesGroup):
     get_appeal_photo = State()
 
 
-def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
+def make_inline_producer_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
     inline_keyboard = InlineKeyboardMarkup(row_width=3)
     if start != 0:
         inline_keyboard.insert(
@@ -77,7 +77,7 @@ def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
     if start < len(data_list)-1:
         inline_keyboard.insert(
             InlineKeyboardButton(
-                text='Далее ➡️',
+                text='Другой ➡️',
                 callback_data=callback_produser_data.new(action='incr')
             )
         )
@@ -87,39 +87,39 @@ async def update_producer_keyboard(message: types.Message, start: int, producers
     with suppress(MessageNotModified):
         await message.edit_text(
             f'Выберите производителя\n\n{producers[start]}',
-            reply_markup=make_inline_keyboard(producers, start)
+            reply_markup=make_inline_producer_keyboard(producers, start)
             )
 
-# def make_inline_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
-#     producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
-#     if start != 0:
-#         producer_inline_keyboard.add(
-#             InlineKeyboardButton(
-#                 text="⬅️ вернуться к прошлому",
-#                 callback_data=callback_produser_data.new(action='decr')
-#             )
-#         )
-#     producer_inline_keyboard.add(
-#         InlineKeyboardButton(
-#             text='Выбрать текущего',
-#             callback_data=callback_produser_data.new(action=start)
-#         )
-#     )
-#     if start < len(data_list)-1:
-#         producer_inline_keyboard.add(
-#             InlineKeyboardButton(
-#                 text="➡️ перейти следующему",
-#                 callback_data=callback_produser_data.new(action='incr')
-#             )
-#         )
-#     return producer_inline_keyboard
+def make_inline_package_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
+    producer_inline_keyboard = InlineKeyboardMarkup(row_width=1)
+    if start != 0:
+        producer_inline_keyboard.add(
+            InlineKeyboardButton(
+                text="⬅️ Вернуться",
+                callback_data=callback_produser_data.new(action='decr')
+            )
+        )
+    producer_inline_keyboard.add(
+        InlineKeyboardButton(
+            text='Выбрать',
+            callback_data=callback_produser_data.new(action=start)
+        )
+    )
+    if start < len(data_list)-1:
+        producer_inline_keyboard.add(
+            InlineKeyboardButton(
+                text="Другая ➡️",
+                callback_data=callback_produser_data.new(action='incr')
+            )
+        )
+    return producer_inline_keyboard
 
 
 async def update_package_keyboard(message: types.Message, start: int, packages: list):
     with suppress(MessageNotModified):
         await message.edit_text(
             f'Выберите упаковку\n\n{packages[start]}',
-            reply_markup=make_inline_keyboard(packages, start)
+            reply_markup=make_inline_package_keyboard(packages, start)
         )
 
 
@@ -206,7 +206,7 @@ async def get_price_handler(message: types.Message, state: FSMContext):
             message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
         await message.reply(
             f'Выберите производителя\n\n{producers[0]}',
-            reply_markup=make_inline_keyboard(producers, 0) # 0 - начало списка
+            reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
         )
         await state.update_data(current_item=0)
         await state.update_data(parsed_data=data)
@@ -224,7 +224,6 @@ async def get_package_handler(call: types.CallbackQuery, callback_data: dict, st
     await state.update_data(current_produсer=current_produсer)
     packages = get_package(data['parsed_data'], current_produсer)
     await state.update_data(packages=packages)
-    message_string = ''
     # for key_number, package in enumerate(packages):
     #     message_string += str(key_number+1) + ')\n' + package + ' \n \n'
     await state.update_data(current_item=0)
