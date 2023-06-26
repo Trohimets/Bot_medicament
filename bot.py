@@ -250,10 +250,11 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
             f'Максимальная цена преперата {final_price} руб.\n\n' +
             f'Если вы купили препарат дороже, то в ответном сообщении ' +
             f'отправьте следующие данные:\n1) адрес аптеки, в которой вы ' +
-            f'приобрели препарат;\n2) ваши фамилию, имя и отчество; \n3) ваш ' +
-            f'контактный телефон. \n\nИли нажмите синюю кнопку "Меню" и прервите работу бота,' +
+            f'приобрели препарат;\n2) ваши фамилию, имя и отчество; \n3) ваш контактный телефон. \n\n' +
+            f'Настоящим вы соглашаетесь на обработку персональных данных. \n\n' +
+            f'Или нажмите синюю кнопку "Меню" и прервите работу бота,' +
             f' чтобы проверить другой препарат.'
-        )
+            )
     
     await FSMCheckPrice.get_appeal_text.set()
 
@@ -279,9 +280,9 @@ async def get_appeal(message: types.Message, state: FSMContext):
     data = await state.get_data()
     await bot.send_message(chat_id, data['appeal_text'])
     await state.finish()
-    await message.reply('Спасибо за обращение. '
-                        'Ваша жалоба отправлена на рассмотрение')
-
+    await message.reply('Спасибо за обращение. ' +
+                        'Ваша жалоба отправлена на рассмотрение. В ближайшее время с вами свяжется сотрудник Комитета по тарифам Санкт-Петербурга.')
+        
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True, on_startup=setup_bot_commands)
