@@ -17,6 +17,18 @@ def get_json(search_name):
         return 'сервис проверки временно не доступен'
     return data
 
+def get_json_alternative(search_name):
+    url = f'https://jnvlpcalc.spbeias.ru/api/JNVLP/GetName?chunkName={search_name}&chunkPackage=&chunkProducer='
+    r = requests.get(url)
+    try:
+        data = r.json()
+        del data[10:]
+    except requests.exceptions.JSONDecodeError:
+        return 'сервис проверки временно не доступен'
+    return data
+
+# print(get_json_alternative('инсулин'))
+
 def get_package(data, producer):
     result = []
     for element in data:
@@ -44,5 +56,6 @@ def get_price(data, producer, package):
 
 # print(get_json(search_name))
 # data = get_json(search_name)
+# print(data)
 # print(get_producer(data))
 # print(get_package(data, producer))

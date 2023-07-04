@@ -11,9 +11,9 @@ from aiogram.types import (BotCommand, InlineKeyboardButton, InlineKeyboardMarku
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 from contextlib import suppress
+from aiogram.utils.callback_data import CallbackData
 
-
-from price_parser import get_json, get_package, get_producer, get_price
+from price_parser import get_json, get_json_alternative, get_package, get_producer, get_price
 import tg_analytic
 
 
@@ -41,6 +41,7 @@ bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=storage)
 
 callback_produser_data = CallbackData('producer', 'action')
+collback_data = CallbackData('name', 'id')
 
 @dp.message_handler(commands=['moderator'], is_chat_admin=True)
 async def take_statistics_command(message: types.Message):
@@ -51,12 +52,22 @@ async def take_statistics_command(message: types.Message):
 
 
 class FSMCheckPrice(StatesGroup):
-    # check_name = State()
     get_producer = State()
     get_package = State()
     check_current_price = State()
     get_appeal_text = State()
     get_appeal_photo = State()
+
+
+def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
+    names_inline_keyboard = InlineKeyboardMarkup(row_width=3)
+    for number, name in enumerate(data_list):
+        name_button = InlineKeyboardButton(
+            text=number+1,
+            callback_data=collback_data.new(id=number)
+        )
+        names_inline_keyboard.insert(name_button)
+    return names_inline_keyboard
 
 
 def make_inline_producer_keyboard(data_list: list, start: int) -> InlineKeyboardMarkup:
@@ -190,20 +201,43 @@ async def get_price_handler(message: types.Message, state: FSMContext):
     tg_analytic.statistics(message.chat.id, message.text)
     data = get_json(message.text)
     if len(data) == 0:
-        await message.reply('Название препарата указано неправильно либо он'
+        data = get_json_alternative(message.text)
+        if len(data) == 0:
+            await message.reply('Название препарата указано неправильно либо он'
                             ' не входит в перечень ЖНВЛП. Проверьте правильность написания, включая наличие заглавных букв')
-        await state.finish()
-        await message.answer('Какое лекарство будем проверять?')
-    elif type(data) is str:
-        await message.reply(data)
-        state.finish()
-        await message.answer('Какое лекарство будем проверять?')
+            await state.finish()
+            await message.answer('Какое лекарство будем проверять?')
+        elif type(data) is str:
+            await message.reply(data)
+            state.finish()
+            await message.answer('Какое лекарство будем проверять?')
+        else:
+            message_string = ''
+            for key_number, name in enumerate(data):
+                message_string += str(key_number+1) + ') ' + name + ' \n'
+            await message.reply(
+                'Точного совпадения не найдено. Возможно, вы имели ввиду:\n' + message_string,
+                reply_markup = make_inline_keyboard(data)
+            )
+            print(message.text)
+            data = get_json()
+            producers = get_producer(data)
+            message_string = ''
+            for key_number, producer in enumerate(producers):
+                message_string += str(key_number+1) + ') ' + producer + ' \n'
+            await message.reply(
+            f'Выберите производителя:\n\n{producers[0]}',
+            reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
+            )
+            await state.update_data(current_item=0)
+            await state.update_data(parsed_data=data)
+            await state.update_data(producers=producers)
+            await FSMCheckPrice.get_producer.set()
     else:
         producers = get_producer(data)
-        
         message_string = ''
         for key_number, producer in enumerate(producers):
-            message_string += str(key_number+1) + ')\n' + producer + ' \n \n'
+            message_string += str(key_number+1) + ') ' + producer + ' \n'
         await message.reply(
             f'Выберите производителя:\n\n{producers[0]}',
             reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
