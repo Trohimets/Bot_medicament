@@ -41,17 +41,18 @@ bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=storage)
 
 callback_produser_data = CallbackData('producer', 'action')
-collback_data = CallbackData('name', 'id')
+suggest_callback_data = CallbackData('id', 'index', 'name')
 
 @dp.message_handler(commands=['moderator'], is_chat_admin=True)
 async def take_statistics_command(message: types.Message):
     global ID
-    ID =message.from_user.id
+    ID = message.from_user.id
     await bot.send_message(message.from_user.id, 'Вы вошли в режим, который дает возможность ознакомиться со статистикой')
     await message.delete()
 
 
 class FSMCheckPrice(StatesGroup):
+    check_suggest = State()
     get_producer = State()
     get_package = State()
     check_current_price = State()
@@ -59,12 +60,12 @@ class FSMCheckPrice(StatesGroup):
     get_appeal_photo = State()
 
 
-def make_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
+def make_suggest_inline_keyboard(data_list: list) -> InlineKeyboardMarkup:
     names_inline_keyboard = InlineKeyboardMarkup(row_width=3)
     for number, name in enumerate(data_list):
         name_button = InlineKeyboardButton(
             text=number+1,
-            callback_data=collback_data.new(id=number)
+            callback_data=suggest_callback_data.new(index=number, name=name)
         )
         names_inline_keyboard.insert(name_button)
     return names_inline_keyboard
@@ -134,6 +135,21 @@ async def update_package_keyboard(message: types.Message, start: int, packages: 
         )
 
 
+async def send_producer_keyboard(data, message, state):
+    producers = get_producer(data)
+    message_string = ''
+    for key_number, producer in enumerate(producers):
+        message_string += str(key_number+1) + ') ' + producer + ' \n'
+    await message.reply(
+        f'Выберите производителя:\n\n{producers[0]}',
+        reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
+    )
+    await state.update_data(current_item=0)
+    await state.update_data(parsed_data=data)
+    await state.update_data(producers=producers)
+    await FSMCheckPrice.get_producer.set()
+
+
 @dp.callback_query_handler(callback_produser_data.filter(action=['incr', 'decr']), state=FSMCheckPrice.get_producer)
 async def callbacks_produser_paginated_handler(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
     action = callback_data["action"]
@@ -167,6 +183,7 @@ async def callbacks_price_paginated_handler(call: types.CallbackQuery, callback_
 # async def get_chat_id(message):
 #     print(message)
 
+
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     tg_analytic.statistics(message.chat.id, message.text)
@@ -181,7 +198,6 @@ async def cancel_dialog(message: types.Message, state: FSMContext):
         return
     await state.finish()
     await message.reply('Текущая проверка отменена. Вы можете ввести новое название для поиска.')
-
 
 
 @dp.message_handler(commands=['статистика'], state='*')
@@ -215,37 +231,26 @@ async def get_price_handler(message: types.Message, state: FSMContext):
             message_string = ''
             for key_number, name in enumerate(data):
                 message_string += str(key_number+1) + ') ' + name + ' \n'
+            await FSMCheckPrice.check_suggest.set()
             await message.reply(
                 'Точного совпадения не найдено. Возможно, вы имели ввиду:\n' + message_string,
-                reply_markup = make_inline_keyboard(data)
+                reply_markup=make_suggest_inline_keyboard(data)
             )
-            print(message.text)
-            data = get_json()
-            producers = get_producer(data)
-            message_string = ''
-            for key_number, producer in enumerate(producers):
-                message_string += str(key_number+1) + ') ' + producer + ' \n'
-            await message.reply(
-            f'Выберите производителя:\n\n{producers[0]}',
-            reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
-            )
-            await state.update_data(current_item=0)
-            await state.update_data(parsed_data=data)
-            await state.update_data(producers=producers)
-            await FSMCheckPrice.get_producer.set()
     else:
-        producers = get_producer(data)
-        message_string = ''
-        for key_number, producer in enumerate(producers):
-            message_string += str(key_number+1) + ') ' + producer + ' \n'
-        await message.reply(
-            f'Выберите производителя:\n\n{producers[0]}',
-            reply_markup=make_inline_producer_keyboard(producers, 0) # 0 - начало списка
-        )
-        await state.update_data(current_item=0)
-        await state.update_data(parsed_data=data)
-        await state.update_data(producers=producers)
-        await FSMCheckPrice.get_producer.set()
+        await send_producer_keyboard(data, message, state)
+
+
+@dp.callback_query_handler(
+    suggest_callback_data.filter(),
+    state=FSMCheckPrice.check_suggest
+)
+async def suggest_handler(
+    callback: types.CallbackQuery,
+    callback_data: dict,
+    state: FSMContext
+):
+    data = get_json(callback_data['name'])
+    await send_producer_keyboard(data, callback.message, state)
 
     
 @dp.callback_query_handler(
@@ -289,7 +294,6 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
             f'Или нажмите синюю кнопку "Меню" и прервите работу бота,' +
             f' чтобы проверить другой препарат.'
             )
-    
     await FSMCheckPrice.get_appeal_text.set()
 
 @dp.message_handler(
