@@ -286,10 +286,10 @@ async def check_price_handler(callback: types.CallbackQuery, callback_data: dict
     current_packege = packages[int(callback_data['action'])]
     final_price = get_price(parsed_data, current_produсer, current_packege)
     await callback.message.answer(
-            f'Максимальная цена преперата {final_price} руб.\n\n' +
+            f'Максимальная цена препарата {final_price} руб.\n\n' +
             f'Если вы купили препарат дороже, то в ответном сообщении ' +
             f'отправьте следующие данные:\n1) адрес аптеки, в которой вы ' +
-            f'приобрели препарат;\n2) ваши фамилию, имя и отчество; \n3) ваш контактный телефон. \n\n' +
+            f'приобрели препарат;\n2) ваши фамилию, имя и отчество; \n3) ваш контактный телефон. \n' +
             f'Настоящим вы соглашаетесь на обработку персональных данных. \n\n' +
             f'Или нажмите синюю кнопку "Меню" и прервите работу бота,' +
             f' чтобы проверить другой препарат.'
